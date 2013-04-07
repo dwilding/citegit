@@ -1,0 +1,119 @@
+% README
+%
+% Documents using this package must be compiled with the --shell-escape option.
+
+\ProvidesPackage{citegit}
+
+% Package dependencies
+\RequirePackage{hyperref}
+\RequirePackage{kvoptions}
+\RequirePackage{xstring}
+
+% Package options
+\DeclareStringOption[\jobname.tex]{commits}[]
+\DeclareStringOption[10]{hashes}[]
+\ProcessKeyvalOptions*
+
+% Set the correct GitHub repository if the package selects the wrong one
+% Usage: \github{username}{repository}
+\newcommand\github[2]{%
+	\citegit@github{#1/#2}%
+}
+
+% Cite a file in the repository
+% Usage: \citegit[line--line]{file}{hash}
+\newcommand\citegit[3][]{%
+	% Process the line numbers
+	\def\citegit@linearg{#1--}%
+	\StrBefore{\citegit@linearg}{--}[\citegit@linefrom]%
+	\IfInteger{\citegit@linefrom}{%
+		\StrBetween[1,2]{\citegit@linearg}{--}{--}[\citegit@lineto]%
+		\IfInteger{\citegit@lineto}{%
+			\def\citegit@line{, \citegit@linefrom--\citegit@lineto}%
+			\def\citegit@lineurl{\#L\citegit@linefrom-\citegit@lineto}%
+		}{%
+			\def\citegit@line{, \citegit@linefrom}%
+			\def\citegit@lineurl{\#L\citegit@linefrom}%
+		}%
+	}{%
+		\def\citegit@line{}%
+		\def\citegit@lineurl{}%
+	}%
+	% Output the file path relative to the root of the repository
+	\immediate\write18{%
+		repo=$(readlink -mn "$(git rev-parse --show-toplevel)");%
+		path=$(readlink -mn "#2");%
+		echo "${path##$repo}" > "\jobname.stdout"%
+	}%
+	% Input the file path as \citegit@fileurl, using a method described here:
+	% http://tex.stackexchange.com/questions/16790/write18-capturing-shell-script-output-as-command-variable
+	\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
+	\edef\x{\endgroup\def\noexpand\citegit@fileurl{\@@input "\jobname.stdout" }}\x%
+	% Process the hash
+	\IfInteger{\citegit@hashes}{%
+		\StrLeft{#3}{\citegit@hashes}[\citegit@hash]%
+	}{%
+		\def\citegit@hash{#3}%
+	}
+	% Print the citation
+	\citegit@print{\citegit@line}{#2}{\citegit@hash}{\citegit@lineurl}{\citegit@fileurl}{#3}%
+}
+
+% Print a git citation
+% Usage: \citegit@print{line}{file}{hash}{GitHub_line}{GitHub_file}{GitHub_hash}
+\newcommand\citegit@print[6]{%
+	\texttt{#2}#1 (\texttt{#3})%
+}
+
+% Set the GitHub repository
+% Usage: \citegit@github{username/repository}
+\newcommand\citegit@github[1]{%
+	% Make the citation printing macro link to this GitHub repository
+	\renewcommand\citegit@print[6]{%
+		\href{https://github.com/#1/blob/##6##5##4}{\texttt{##2}##1}
+		(\href{https://github.com/#1/tree/##6}{\texttt{##3}})%
+	}%
+}
+
+% Get information about the latest commit and define an appropriate macro
+% Usage: \citegit@info{csname}{flag}
+\newcommand\citegit@info[2]{%
+	\IfStrEq{\citegit@commits}{}{%
+		% Output information about the latest commit for the whole repository
+		\immediate\write18{%
+			git log -1 --format='\@percentchar#2' > "\jobname.stdout"%
+		}%
+	}{%
+		% Output information about the latest commit for the files/dirs specified by \citegit@commits
+		\immediate\write18{%
+			git log -1 --format='\@percentchar#2' -- "\citegit@commits" > "\jobname.stdout"%
+		}%
+	}%
+	% Input the commit information as \git#1, using a method described here:
+	% http://tex.stackexchange.com/questions/16790/write18-capturing-shell-script-output-as-command-variable
+	\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
+	\edef\x{\endgroup\def\csname git#1\endcsname{\@@input "\jobname.stdout" }}\x%
+}
+
+% Define macros relating to the latest commit
+\citegit@info{hash}{H}
+\citegit@info{date}{ad}
+\citegit@info{author}{an}
+\citegit@info{message}{s}
+
+% Output the first remote repository that is hosted on GitHub
+\immediate\write18{%
+	git remote -v |%
+	sed -n \unexpanded{'s/.*git@github.com:\(.*\)\.git.*/\1/p'} |%
+	head -n 1 > "\jobname.stdout"%
+}
+
+% Input the remote repository as \citegit@remote, using a method described here:
+% http://tex.stackexchange.com/questions/16790/write18-capturing-shell-script-output-as-command-variable
+\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
+\edef\x{\endgroup\def\noexpand\citegit@remote{\@@input "\jobname.stdout" }}\x
+
+% Set the remote repository as the GitHub repository
+\IfStrEq{\citegit@remote}{}{}{%
+	\citegit@github{\citegit@remote}
+}
