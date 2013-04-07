@@ -1,0 +1,38 @@
+\documentclass{article}
+\usepackage[commits]{citegit}
+\begin{document}
+	This is a sample document that uses the \verb+citegit+ package.
+	It must be compiled with the \verb+--shell-escape+ option.
+	The package provides the following user commands.
+	\begin{description}
+		\item[\texttt{citegit}]
+		This command displays a reference to a snapshot of a file in the git
+		repository.
+		To inspect the definition of this command, please see
+		\citegit[23--60]{citegit.sty}{7920931825eb5c43502069d54033653512ebda7e}.
+		The length of the displayed commit hash is controlled by the \verb+hashes+
+		package option; the default hash length is \verb+[hashes=10]+.
+		\item[\texttt{github}]
+		This command sets the appropriate GitHub repository if the package did
+		not do it automatically for some reason.
+		In theory, at least, this command should never need to be used.
+		\item[\texttt{githash}]
+		This command displays the full hash of the latest commit, currently \texttt{\githash}.
+		By default, `latest commit' means the latest commit that involves the file
+		\verb+\jobname.tex+, but this can be changed by the \verb+commits+
+		package option.
+		For example, \verb+[commits=.]+ means the latest commit involving
+		anything in the working directory, and just \verb+[commits]+ means the
+		latest commit involving anything in the whole repository.
+		\item[\texttt{gitdate}]
+		This command displays the date and time of the latest commit.
+		There is currently no option to change the formatting because
+		the user can change it if they like in their \verb+git+ configuration.
+		\item[\texttt{gitauthor}]
+		This command displays the author of the latest commit, currently
+		\gitauthor.
+		\item[\texttt{gitmessage}]
+		This command displays the latest commit message, currently
+		``\gitmessage''
+	\end{description}
+\end{document}
