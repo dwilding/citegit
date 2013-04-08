@@ -12,6 +12,7 @@
 % Package options
 \DeclareStringOption[\jobname.tex]{commits}[]
 \DeclareStringOption[10]{hashes}[]
+\DeclareBoolOption[true]{checkdependencies}
 \ProcessKeyvalOptions*
 
 % Set the correct GitHub repository if the package selects the wrong one
@@ -84,9 +85,26 @@
 			git log -1 --format='\@percentchar#2' > "\jobname.stdout"%
 		}%
 	}{%
+		% Go through each tex file in \citegit@commits and add any dependencies.
+		\ifcitegit@checkdependencies%
+			%TODO: beginloop for *.tex in citegit@commits:
+			%TODO: recursively search the dependencies for dependencies!
+			% Find dependencies in \jobname.tex
+			\immediate\write18{%
+				 egrep \unexpanded{'\\input|\\include'} \jobname.tex |%
+				sed -n \unexpanded{'s/^[ \t]*\(\\input\|\\include\){\([^\.]*\)\(\.tex\)*}/\2\.tex \\jobname\.tex/p'} |%
+				tr \unexpanded{'\n'} ' ' > \jobname.stdout%
+			}%
+			% Input the commit information as \citegit@dependencies, using a method 
+			% described here: http://tex.stackexchange.com/questions/16790/
+			\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
+			\edef\x{\endgroup\def\noexpand\citegit@commits{\@@input "\jobname.stdout" }}\x%
+			%TODO: endloop
+			%TODO later: generalise \\input\|\\include for options.
+		\fi%
 		% Output information about the latest commit for the files/dirs specified by \citegit@commits
 		\immediate\write18{%
-			git log -1 --format='\@percentchar#2' -- "\citegit@commits" > "\jobname.stdout"%
+			git log -1 --format='\@percentchar#2' -- \citegit@commits > "\jobname.stdout"%
 		}%
 	}%
 	% Input the commit information as \git#1, using a method described here:
