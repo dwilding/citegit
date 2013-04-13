@@ -37,12 +37,18 @@
 	\def\citegit@filter{'\citegit@dir'}%
 }
 
+% Print a macro name
+\newcommand\citegit@macro[1]{%
+	\texttt{\char`\\#1}%
+}
+
 % Get information about the latest commit and define an appropriate macro
 % Usage: \citegit@info{csname}{flag}
 \newcommand\citegit@info[2]{%
 	% Output information about the latest commit
 	\immediate\write18{%
-		git log -1 --format='\@percentchar#2' -- \citegit@filter > \jobname.stdout%
+		git log -1 --format='\@percentchar#2' -- \citegit@filter |%
+		sed \unexpanded{'s/\\\([a-z]*\)/\\noexpand\\citegit@macro{\1}/gi'} > \jobname.stdout%
 	}%
 	% Input the commit information as \git#1, using a method described here:
 	% http://tex.stackexchange.com/questions/16790/
