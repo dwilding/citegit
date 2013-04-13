@@ -12,6 +12,7 @@
 
 % Package options
 \DeclareStringOption[\jobname.tex]{source}
+\DeclareStringOption[\jobname.pdf]{target}
 \DeclareStringOption{dir}
 \DeclareStringOption[10]{hashes}[]
 \ProcessKeyvalOptions*
@@ -22,7 +23,13 @@
 	\def\citegit@dir{.}%
 	% Output the dependencies of the current job
 	\immediate\write18{%
-		egrep \unexpanded{'\\input|\\include'} '\citegit@source' |%
+		for file in GNUmakefile makefile Makefile;%
+			do if [ -f $file ];%
+				then grep \citegit@target: $file | cut -d ':' -f 2- > \jobname.stdout;%
+				if [ -s \jobname.stdout ]; then exit; fi;%
+			fi;%
+		done;%
+		egrep \unexpanded{'\\input|\\include'} \citegit@source |%
 		sed -n \unexpanded{'s/^[ \t]*\(\\input\|\\include\){\([^\.]*\)\(\.tex\)*}/\2\.tex/p'} |%
 		tr \unexpanded{'\n'} ' ' > \jobname.stdout;%
 		echo \citegit@source >> \jobname.stdout%
