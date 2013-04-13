@@ -48,7 +48,7 @@
 	% Output information about the latest commit
 	\immediate\write18{%
 		git log -1 --format='\@percentchar#2' -- \citegit@filter |%
-		sed \unexpanded{'s/\\\([a-z]*\)/\\noexpand\\citegit@macro{\1}/gi'} > \jobname.stdout%
+		sed \unexpanded{'s/\\\([@a-z]*\)/\\noexpand\\citegit@macro{\1}/gi'} > \jobname.stdout%
 	}%
 	% Input the commit information as \git#1, using a method described here:
 	% http://tex.stackexchange.com/questions/16790/
