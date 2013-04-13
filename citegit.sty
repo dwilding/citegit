@@ -10,10 +10,50 @@
 \RequirePackage{xstring}
 
 % Package options
-\DeclareStringOption[\jobname.tex]{commits}[]
+\DeclareStringOption[\jobname.tex]{source}
+\DeclareStringOption{dir}
 \DeclareStringOption[10]{hashes}[]
-\DeclareBoolOption[true]{checkdependencies}
 \ProcessKeyvalOptions*
+
+\IfStrEq{\citegit@dir}{}{%
+	% If \citegit@dir has not been specified then the working directory is . and
+	% the latest commit should only involve the current job and its dependencies
+	\def\citegit@dir{.}%
+	% Output the dependencies of the current job
+	\immediate\write18{%
+		egrep \unexpanded{'\\input|\\include'} '\citegit@source' |%
+		sed -n \unexpanded{'s/^[ \t]*\(\\input\|\\include\){\([^\.]*\)\(\.tex\)*}/\2\.tex/p'} |%
+		tr \unexpanded{'\n'} ' ' > \jobname.stdout;%
+		echo \citegit@source >> \jobname.stdout%
+	}%
+	% Input the dependencies as \citegit@filter, using a method described here:
+	% http://tex.stackexchange.com/questions/16790/
+	\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
+	\edef\x{\endgroup\def\noexpand\citegit@filter{\@@input \jobname.stdout }}\x%
+}{%
+	% If \citegit@dir has been specified then the latest commit should involve
+	% anything in the directory \citegit@dir
+	\def\citegit@filter{'\citegit@dir'}%
+}
+
+% Get information about the latest commit and define an appropriate macro
+% Usage: \citegit@info{csname}{flag}
+\newcommand\citegit@info[2]{%
+	% Output information about the latest commit
+	\immediate\write18{%
+		git log -1 --format='\@percentchar#2' -- \citegit@filter > \jobname.stdout%
+	}%
+	% Input the commit information as \git#1, using a method described here:
+	% http://tex.stackexchange.com/questions/16790/
+	\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
+	\edef\x{\endgroup\def\csname git#1\endcsname{\@@input \jobname.stdout }}\x%
+}
+
+% Define macros relating to the latest commit
+\citegit@info{hash}{H}
+\citegit@info{date}{ad}
+\citegit@info{author}{an}
+\citegit@info{message}{s}
 
 % Set the correct GitHub repository if the package selects the wrong one
 % Usage: \github{username}{repository}
@@ -75,49 +115,6 @@
 		(\href{https://github.com/#1/tree/##6}{\texttt{##3}})%
 	}%
 }
-
-% Get information about the latest commit and define an appropriate macro
-% Usage: \citegit@info{csname}{flag}
-\newcommand\citegit@info[2]{%
-	\IfStrEq{\citegit@commits}{}{%
-		% Output information about the latest commit for the whole repository
-		\immediate\write18{%
-			git log -1 --format='\@percentchar#2' > "\jobname.stdout"%
-		}%
-	}{%
-		% Go through each tex file in \citegit@commits and add any dependencies.
-		\ifcitegit@checkdependencies%
-			%TODO: beginloop for *.tex in citegit@commits:
-			%TODO: recursively search the dependencies for dependencies!
-			% Find dependencies in \jobname.tex
-			\immediate\write18{%
-				 egrep \unexpanded{'\\input|\\include'} \jobname.tex |%
-				sed -n \unexpanded{'s/^[ \t]*\(\\input\|\\include\){\([^\.]*\)\(\.tex\)*}/\2\.tex \\jobname\.tex/p'} |%
-				tr \unexpanded{'\n'} ' ' > \jobname.stdout%
-			}%
-			% Input the commit information as \citegit@dependencies, using a method 
-			% described here: http://tex.stackexchange.com/questions/16790/
-			\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
-			\edef\x{\endgroup\def\noexpand\citegit@commits{\@@input "\jobname.stdout" }}\x%
-			%TODO: endloop
-			%TODO later: generalise \\input\|\\include for options.
-		\fi%
-		% Output information about the latest commit for the files/dirs specified by \citegit@commits
-		\immediate\write18{%
-			git log -1 --format='\@percentchar#2' -- \citegit@commits > "\jobname.stdout"%
-		}%
-	}%
-	% Input the commit information as \git#1, using a method described here:
-	% http://tex.stackexchange.com/questions/16790/write18-capturing-shell-script-output-as-command-variable
-	\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
-	\edef\x{\endgroup\def\csname git#1\endcsname{\@@input "\jobname.stdout" }}\x%
-}
-
-% Define macros relating to the latest commit
-\citegit@info{hash}{H}
-\citegit@info{date}{ad}
-\citegit@info{author}{an}
-\citegit@info{message}{s}
 
 % Output the first remote repository that is hosted on GitHub
 \immediate\write18{%

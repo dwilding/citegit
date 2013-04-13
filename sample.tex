@@ -1,5 +1,5 @@
 \documentclass{article}
-\usepackage[commits]{citegit}
+\usepackage{citegit}
 \begin{document}
 	This is a sample document that uses the \verb+citegit+ package.
 	It must be compiled with the \verb+--shell-escape+ option.
@@ -18,12 +18,6 @@
 		In theory, at least, this command should never need to be used.
 		\item[\texttt{githash}]
 		This command displays the full hash of the latest commit, currently \texttt{\githash}.
-		By default, `latest commit' means the latest commit that involves the file
-		\verb+\jobname.tex+, but this can be changed by the \verb+commits+
-		package option.
-		For example, \verb+[commits=.]+ means the latest commit involving
-		anything in the working directory, and just \verb+[commits]+ means the
-		latest commit involving anything in the whole repository.
 		\item[\texttt{gitdate}]
 		This command displays the date and time of the latest commit.
 		There is currently no option to change the formatting because
