@@ -137,3 +137,24 @@
 		}%
 	}%
 }
+
+% Test whether (the relevant part of) the repository has uncommitted changes
+% Usage: \ifclean[*]{...clean...}{...unclean...}
+\DeclareDocumentCommand{\ifclean}{smm}{%
+	% If a star is present then any untracked files will be ignored
+	\IfBooleanTF{#1}{%
+		\def\citegit@untracked{--untracked-files=no }%
+	}{%
+		\def\citegit@untracked{}%
+	}%
+	% Output the repository status
+	\immediate\write18{%
+		git status --porcelain \citegit@untracked -- \citegit@filter > \jobname.stdout%
+	}%
+	% Input the repository status as \citegit@status, using a method described here:
+	% http://tex.stackexchange.com/questions/16790/
+	\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
+	\edef\x{\endgroup\def\noexpand\citegit@status{\@@input \jobname.stdout }}\x%
+	% If \citegit@status is empty then the repository is clean
+	\IfStrEq{\citegit@status}{}{#2}{#3}%
+}
