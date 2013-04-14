@@ -109,16 +109,18 @@
 			\def\citegit@lineurl{\#L\citegit@linefrom}%
 		}%
 	}%
-	% Output the file path relative to the root of the repository
-	\immediate\write18{%
-		repo=$(readlink -mn "$(git rev-parse --show-toplevel)");%
-		path=$(cd '\citegit@dir'; readlink -mn '\citegit@file');%
-		echo "${path##$repo}" > \jobname.stdout%
+	\IfStrEq{\citegit@file}{}{}{%
+		% Output the file path relative to the root of the repository
+		\immediate\write18{%
+			repo=$(readlink -mn "$(git rev-parse --show-toplevel)");%
+			path=$(cd '\citegit@dir'; readlink -mn '\citegit@file');%
+			echo "${path##$repo}" > \jobname.stdout%
+		}%
+		% Input the path as \citegit@fileurl, using a method described here:
+		% http://tex.stackexchange.com/questions/16790/
+		\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
+		\edef\x{\endgroup\def\noexpand\citegit@fileurl{\@@input \jobname.stdout }}\x%
 	}%
-	% Input the path as \citegit@fileurl, using a method described here:
-	% http://tex.stackexchange.com/questions/16790/
-	\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
-	\edef\x{\endgroup\def\noexpand\citegit@fileurl{\@@input \jobname.stdout }}\x%
 	% Print the citation
 	\IfStrEq{\citegit@github}{}{%
 		\texttt{\citegit@hash}
