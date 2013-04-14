@@ -25,14 +25,21 @@
 	\immediate\write18{%
 		for file in GNUmakefile makefile Makefile;%
 			do if [ -f $file ];%
-				then grep \citegit@target: $file | cut -d ':' -f 2- > \jobname.stdout;%
-				if [ -s \jobname.stdout ]; then exit; fi;%
+				then depends=($(grep \citegit@target: $file | cut -d ':' -f 2-));%
+				if [ ! -z $depends ]; then break; fi;%
 			fi;%
 		done;%
-		egrep \unexpanded{'\\input|\\include'} \citegit@source |%
-		sed -n \unexpanded{'s/^[ \t]*\(\\input\|\\include\){\([^\.]*\)\(\.tex\)*}/\2\.tex/p'} |%
-		tr \unexpanded{'\n'} ' ' > \jobname.stdout;%
-		echo \citegit@source >> \jobname.stdout%
+		if [ -z $depends ];%
+			then depends=($(egrep \unexpanded{'\\input|\\include'} \citegit@source |%
+			sed -n \unexpanded{'s/^[ \t]*\(\\input\|\\include\){\([^\.]*\)\(\.tex\)*}/\2\.tex/p'} |%
+			tr \unexpanded{'\n'} ' ') \citegit@source);%
+		fi;%
+		for file in ${depends[@]};%
+			do if [ -h $file ];%
+				then readlink -n $file; echo -n ' ';%
+				else echo -n $file' ';%
+			fi;%
+		done > \jobname.stdout%
 	}%
 	% Input the dependencies as \citegit@filter, using a method described here:
 	% http://tex.stackexchange.com/questions/16790/
