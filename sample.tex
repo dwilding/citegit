@@ -1,26 +1,60 @@
-\documentclass{article}
+\documentclass[12pt,a4paper]{article}
 \usepackage{citegit}
 \begin{document}
-	This is a sample document that uses the \verb+citegit+ package.
-	It must be compiled with the \verb+--shell-escape+ option.
-	The package provides the following user commands.
-	\begin{description}
-		\item[\texttt{citegit}]
-		This command displays a reference to a snapshot of a file in the git
-		repository.
-		The length of the displayed commit hash is controlled by the \verb+hashes+
-		package option; the default hash length is \verb+[hashes=10]+.
-		\item[\texttt{githash}]
-		This command displays the full hash of the latest commit, currently \texttt{\githash}.
-		\item[\texttt{gitdate}]
-		This command displays the date and time of the latest commit.
-		There is currently no option to change the formatting because
-		the user can change it if they like in their \verb+git+ configuration.
-		\item[\texttt{gitauthor}]
-		This command displays the author of the latest commit, currently
-		\gitauthor.
-		\item[\texttt{gitmessage}]
-		This command displays the latest commit message, currently
-		``\gitmessage''
-	\end{description}
+	\section*{Introduction}
+	The \verb+citegit+ package can be used by a \LaTeX{} document to display
+	(a limited amount of) information about the git repository that the document
+	lives in. All functionality of the package should be considered highly
+	unstable at the moment.
+	\section*{Getting started}
+	The package has been designed to require as little configuration as possible,
+	so it only takes three steps to get up and running.
+	\begin{enumerate}
+		\item
+		\label{step_package}
+		Add the package to a document's preamble:
+		\begin{verbatim}
+			\usepackage{citegit}
+		\end{verbatim}
+		\item
+		\label{step_cite}
+		Cite the latest commit somewhere in the document:
+		\begin{verbatim}
+			\citegit{\githash}
+		\end{verbatim}
+		\item
+		\label{step_compile}
+		Compile the document:
+		\begin{verbatim}
+			pdflatex --shell-escape doc.tex
+		\end{verbatim}
+	\end{enumerate}
+	Then, assuming nothing goes wrong for some reason, the output of step
+	\ref{step_cite} will be something like \citegit{\githash}, the hash of the
+	latest commit. If the repository is hosted on \href{https://github.com}{GitHub}
+	then the displayed hash will automatically be a link to the appropriate page
+	on GitHub.
+
+%	This is a sample document that uses the \verb+citegit+ package.
+%	It must be compiled with the \verb+--shell-escape+ option.
+%	The package provides the following user commands.
+%	\begin{description}
+%		\item[\texttt{citegit}]
+%		This command displays a reference to a snapshot of a file in the git
+%		repository.
+%		The length of the displayed commit hash is controlled by the \verb+hashes+
+%		package option; the default hash length is \verb+[hashes=10]+.
+%		\item[\texttt{githash}]
+%		This command displays the full hash of the latest commit, currently \texttt{\githash}.
+%		\item[\texttt{gitdate}]
+%		This command displays the date and time of the latest commit.
+%		There is currently no option to change the formatting because
+%		the user can change it if they like in their \verb+git+ configuration.
+%		\item[\texttt{gitauthor}]
+%		This command displays the author of the latest commit, currently
+%		\gitauthor.
+%		\item[\texttt{gitmessage}]
+%		This command displays the latest commit message, currently
+%		``\gitmessage''
+%	\end{description}
 \end{document}
