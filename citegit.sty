@@ -25,19 +25,20 @@
 	\immediate\write18{%
 		for file in GNUmakefile makefile Makefile;%
 			do if [ -f $file ];%
-				then depends=($(grep \citegit@target: $file | cut -d ':' -f 2-));%
-				if [ ! -z $depends ]; then break; fi;%
+				then depends=$(grep \citegit@target: $file | cut -d ':' -f 2-);%
+				if [ -n "$depends" ]; then break; fi;%
 			fi;%
 		done;%
-		if [ -z $depends ];%
-			then depends=($(egrep \unexpanded{'\\input|\\include'} \citegit@source |%
+		if [ -z "$depends" ];%
+			then depends="$(egrep \unexpanded{'\\input|\\include'} \citegit@source |%
 			sed -n \unexpanded{'s/^[ \t]*\(\\input\|\\include\){\([^\.]*\)\(\.tex\)*}/\2\.tex/p'} |%
-			tr \unexpanded{'\n'} ' ') \citegit@source);%
+			tr \unexpanded{'\n'} ' ')\citegit@source";%
 		fi;%
-		for file in ${depends[@]};%
-			do if [ -h $file ];%
-				then readlink -n $file; echo -n ' ';%
-				else echo -n $file' ';%
+		for file in $depends;%
+			do echo -n ' ';%
+			if [ -h $file ];%
+				then readlink -n $file;%
+				else echo -n $file;%
 			fi;%
 		done > \jobname.stdout%
 	}%
