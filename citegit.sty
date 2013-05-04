@@ -77,6 +77,24 @@
 \citegit@info{author}{an}
 \citegit@info{message}{s}
 
+% Output the repository status
+\immediate\write18{%
+	git status --porcelain -- \citegit@filter > \jobname.stdout%
+}%
+% Input the repository status as \citegit@status, using a method described here:
+% http://tex.stackexchange.com/questions/16790/
+\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
+\edef\x{\endgroup\def\noexpand\citegit@status{\@@input \jobname.stdout }}\x%
+
+% Output the repository tracked status
+\immediate\write18{%
+	git status --porcelain --untracked-files=no -- \citegit@filter > \jobname.stdout%
+}%
+% Input the repository status as \citegit@trackstatus, using a method described here:
+% http://tex.stackexchange.com/questions/16790/
+\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
+\edef\x{\endgroup\def\noexpand\citegit@trackstatus{\@@input \jobname.stdout }}\x%
+
 % Output the first remote repository that is hosted on GitHub
 \immediate\write18{%
 	git remote -v |%
@@ -89,9 +107,22 @@
 \begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
 \edef\x{\endgroup\def\noexpand\citegit@github{\@@input \jobname.stdout }}\x
 
+% Test whether (the relevant part of) the repository has uncommitted changes
+% Usage: \ifclean[*]{...clean...}{...unclean...}
+\DeclareDocumentCommand{\ifclean}{smm}{%
+	% If a star is present then any untracked files will be ignored
+	\IfBooleanTF{#1}{%
+		% If \citegit@fullstatus is empty then the repository is clean
+		\IfStrEq{\citegit@trackstatus}{}{#2}{#3}%
+	}{%
+		% If \citegit@status is empty then the repository is clean
+		\IfStrEq{\citegit@status}{}{#2}{#3}%
+	}%
+}
+
 % Cite a file in the repository
 % Usage: \citegit[line--line][file]{hash}
-\DeclareDocumentCommand{\citegit}{O{}O{}m}{%
+\DeclareDocumentCommand{\citegit}{O{}O{}mO{}}{%
 	% Shorten the hash if necessary
 	\IfInteger{\citegit@hashes}{%
 		\StrLeft{#3}{\citegit@hashes}[\citegit@hash]%
@@ -129,42 +160,29 @@
 		\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
 		\edef\x{\endgroup\def\noexpand\citegit@fileurl{\@@input \jobname.stdout }}\x%
 	}%
-	% Print the citation
-	\IfStrEq{\citegit@github}{}{%
-		\texttt{\citegit@hash}%
-		\IfStrEq{\citegit@file}{}{}{
-			(\texttt{\citegit@file}\citegit@line)%
+	% Build the citation
+	\def\citegit@citation{%
+		\IfStrEq{\citegit@github}{}{%
+			\texttt{\citegit@hash}%
+			\IfStrEq{\citegit@file}{}{}{
+				(\texttt{\citegit@file}\citegit@line)%
+			}%
+		}{%
+			\href{https://github.com/\citegit@github/tree/#3}{\texttt{\citegit@hash}}%
+			\IfStrEq{\citegit@file}{}{}{
+				(\href{%
+					https://github.com/\citegit@github/blob/%
+					#3\citegit@fileurl\citegit@lineurl%
+				}{%
+					\texttt{\citegit@file}\citegit@line%
+				})%
+			}%
 		}%
+	}%
+	% Print the citation or assign it to a macro
+	\IfStrEq{\detokenize{#4}}{}{%
+		\citegit@citation%
 	}{%
-		\href{https://github.com/\citegit@github/tree/#3}{\texttt{\citegit@hash}}%
-		\IfStrEq{\citegit@file}{}{}{
-			(\href{%
-				https://github.com/\citegit@github/blob/%
-				#3\citegit@fileurl\citegit@lineurl%
-			}{%
-				\texttt{\citegit@file}\citegit@line%
-			})%
-		}%
+		\let#4\citegit@citation%
 	}%
-}
-
-% Test whether (the relevant part of) the repository has uncommitted changes
-% Usage: \ifclean[*]{...clean...}{...unclean...}
-\DeclareDocumentCommand{\ifclean}{smm}{%
-	% If a star is present then any untracked files will be ignored
-	\IfBooleanTF{#1}{%
-		\def\citegit@untracked{--untracked-files=no }%
-	}{%
-		\def\citegit@untracked{}%
-	}%
-	% Output the repository status
-	\immediate\write18{%
-		git status --porcelain \citegit@untracked -- \citegit@filter > \jobname.stdout%
-	}%
-	% Input the repository status as \citegit@status, using a method described here:
-	% http://tex.stackexchange.com/questions/16790/
-	\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
-	\edef\x{\endgroup\def\noexpand\citegit@status{\@@input \jobname.stdout }}\x%
-	% If \citegit@status is empty then the repository is clean
-	\IfStrEq{\citegit@status}{}{#2}{#3}%
 }
