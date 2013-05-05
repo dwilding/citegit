@@ -1,5 +1,5 @@
 \documentclass[12pt,a4paper]{article}
-\usepackage{citegit}
+\usepackage[dir=../]{citegit}
 \begin{document}
 	\section*{Introduction}
 	The \verb+citegit+ package can be used by a \LaTeX{} document to display
@@ -43,7 +43,7 @@
 		\citegit[yourfile]{fullhash}
 	\end{verbatim}
 	For example, this document first appeared as
-	\citegit[sample.tex]{64cfab6556112b5190a2deade78f0f628cf848a9}.
+	\citegit[../sample.tex]{64cfab6556112b5190a2deade78f0f628cf848a9}.
 	There is yet another optional argument that allows a specific line, or a
 	range of lines, of a particular file to be cited:
 	\begin{verbatim}
@@ -51,7 +51,7 @@
 	\end{verbatim}
 	For example, at the time of writing the \verb+\citegit+ command
 	was implemented as
-	\citegit[94--149][citegit.sty]{315889ccbb1e0074da8cdf05abf8cb2cbb6d4fdd}.
+	\citegit[99--157][../src/citegit.sty]{df2800ee183e86fc6338646d13d33e224045496a}.
 
 	\section*{Information about the latest commit}
 	The package has two modes of operation.
@@ -90,8 +90,8 @@
 		The commit author, currently ``\gitauthor''.
 		\item[\texttt{\char`\\gitmessage}]
 		The commit message, currently ``\gitmessage'' \TeX{} command names are
-		displayed in \texttt{teletype} font, but it is entirely possible that
-		other unusual commit messages will cause the package to fail spectacularly.
+		displayed in \texttt{teletype} font and issue numbers are linked to
+		GitHub.
 	\end{description}
 
 	\section*{The state of the repository}
