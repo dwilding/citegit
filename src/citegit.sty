@@ -1,0 +1,157 @@
+% README
+%
+% Documents using this package must be compiled with the --shell-escape option
+% because external scripts are used. The output of these scripts is captured
+% using a method described here: http://tex.stackexchange.com/questions/16790
+
+% Scripts path
+\def\citegit@path{./}
+
+\ProvidesPackage{citegit}
+
+% Package dependencies
+\RequirePackage{hyperref}
+\RequirePackage{kvoptions}
+\RequirePackage{xstring}
+\RequirePackage{xparse}
+
+% Package options
+\DeclareStringOption[\jobname.tex]{source}
+\DeclareStringOption[\jobname.pdf]{target}
+\DeclareStringOption{dir}
+\DeclareStringOption[10]{hashes}
+\ProcessKeyvalOptions*
+
+\IfStrEq{\citegit@dir}{}{%
+	% If \citegit@dir has not been specified then the working directory is . and
+	% the latest commit should only involve the current job and its dependencies
+	\def\citegit@dir{.}%
+	% Input the dependencies of the current job
+	\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
+	\edef\x{\endgroup\def\noexpand\citegit@filter{\@@input|"\citegit@path dependencies.sh '\citegit@source' '\citegit@target'" }}\x%
+}{%
+	% If \citegit@dir has been specified then the latest commit should involve
+	% anything in the directory \citegit@dir
+	\def\citegit@filter{\citegit@dir}%
+}
+
+% Input the latest commit hash
+\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
+\edef\x{\endgroup\def\noexpand\githash{\@@input|"\citegit@path log.sh 'H' '\citegit@filter'" }}\x
+
+% Input the latest commit date
+\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
+\edef\x{\endgroup\def\noexpand\gitdate{\@@input|"\citegit@path log.sh 'ad' '\citegit@filter'" }}\x
+
+% Input the latest commit author
+\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
+\edef\x{\endgroup\def\noexpand\gitauthor{\@@input|"\citegit@path log.sh 'an' '\citegit@filter'" }}\x
+
+% Input the latest commit message
+\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
+\edef\x{\endgroup\def\noexpand\gitmessage{\@@input|"\citegit@path log-pretty.sh 's' '\citegit@filter'" }}\x
+
+% Input the repository status
+\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
+\edef\x{\endgroup\def\noexpand\citegit@status{\@@input|"\citegit@path status.sh '' '\citegit@filter'" }}\x
+
+% Input the repository status (tracked files only)
+\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
+\edef\x{\endgroup\def\noexpand\citegit@status@star{\@@input|"\citegit@path status.sh '=no' '\citegit@filter'" }}\x
+
+% Input the GitHub repository
+\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
+\edef\x{\endgroup\def\noexpand\citegit@github{\@@input|"\citegit@path github.sh" }}\x
+
+% Print a backslash character or macro name
+\newcommand\citegit@char@backslash[1]{%
+	\IfStrEq{#1}{}{%
+		\textbackslash%
+	}{%
+		\texttt{\char`\\#1}%
+	}%
+}
+
+% Print a number character or issue reference
+\newcommand\citegit@char@number[1]{%
+	\IfStrEq{#1}{}{%
+		\#%
+	}{%
+		\IfStrEq{\citegit@github}{}{%
+			\##1%
+		}{%
+			\href{https://github.com/\citegit@github/issues/#1}{\##1}%
+		}%
+	}%
+}
+
+% Test whether (the relevant part of) the repository has uncommitted changes
+% Usage: \ifclean[*]{...clean...}{...unclean...}
+\DeclareDocumentCommand{\ifclean}{smm}{%
+	% If a star is present then any untracked files will be ignored
+	\IfBooleanTF{#1}{%
+		\IfStrEq{\citegit@status@star}{}{#2}{#3}%
+	}{%
+		\IfStrEq{\citegit@status}{}{#2}{#3}%
+	}%
+}
+
+% Cite a file in the repository
+% Usage: \citegit[line--line][file]{hash}
+\DeclareDocumentCommand{\citegit}{O{}O{}mO{}}{%
+	% Shorten the hash if necessary
+	\IfInteger{\citegit@hashes}{%
+		\StrLeft{#3}{\citegit@hashes}[\citegit@hash]%
+	}{%
+		\def\citegit@hash{#3}%
+	}%
+	\IfStrEq{#2}{}{%
+		% The first argument is the file because there is no second argument
+		\def\citegit@file{#1}%
+		\def\citegit@line{}%
+		\def\citegit@lineurl{}%
+	}{%
+		% The second argument is the file and the first argument is the line
+		\def\citegit@file{#2}%
+		\def\citegit@linearg{#1--}%
+		\StrBefore{\citegit@linearg}{--}[\citegit@linefrom]%
+		\StrBetween[1,2]{\citegit@linearg}{--}{--}[\citegit@lineto]%
+		\IfInteger{\citegit@lineto}{%
+			\def\citegit@line{, lines \citegit@linefrom--\citegit@lineto}%
+			\def\citegit@lineurl{\#L\citegit@linefrom-\citegit@lineto}%
+		}{%
+			\def\citegit@line{, line \citegit@linefrom}%
+			\def\citegit@lineurl{\#L\citegit@linefrom}%
+		}%
+	}%
+	\IfStrEq{\citegit@file}{}{}{%
+		% Input the file path relative to the root of the repository
+		\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
+		\edef\x{\endgroup\def\noexpand\citegit@fileurl{\@@input|"\citegit@path path.sh '\citegit@dir' '\citegit@file'" }}\x%
+	}%
+	% Build the citation
+	\def\citegit@citation{%
+		\IfStrEq{\citegit@github}{}{%
+			\texttt{\citegit@hash}%
+			\IfStrEq{\citegit@file}{}{}{
+				(\texttt{\citegit@file}\citegit@line)%
+			}%
+		}{%
+			\href{https://github.com/\citegit@github/tree/#3}{\texttt{\citegit@hash}}%
+			\IfStrEq{\citegit@file}{}{}{
+				(\href{%
+					https://github.com/\citegit@github/blob/%
+					#3\citegit@fileurl\citegit@lineurl%
+				}{%
+					\texttt{\citegit@file}\citegit@line%
+				})%
+			}%
+		}%
+	}%
+	% Print the citation or assign it to a macro
+	\IfStrEq{\detokenize{#4}}{}{%
+		\citegit@citation%
+	}{%
+		\let#4\citegit@citation%
+	}%
+}

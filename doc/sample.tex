@@ -1,0 +1,111 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{citegit}
+\begin{document}
+	\section*{Introduction}
+	The \verb+citegit+ package can be used by a \LaTeX{} document to display
+	(a limited amount of) information about the git repository that the document
+	lives in. All functionality of the package should be considered highly
+	unstable at the moment.
+	\section*{Getting started}
+	The package has been designed to require as little configuration as possible,
+	so it only takes three steps to get up and running.
+	\begin{enumerate}
+		\item
+		\label{step_package}
+		Add the package to a document's preamble:
+		\begin{verbatim}
+			\usepackage{citegit}
+		\end{verbatim}
+		\item
+		\label{step_cite}
+		Cite the latest commit somewhere in the document:
+		\begin{verbatim}
+			\citegit{\githash}
+		\end{verbatim}
+		\item
+		\label{step_compile}
+		Compile the document:
+		\begin{verbatim}
+			pdflatex --shell-escape yourdoc.tex
+		\end{verbatim}
+	\end{enumerate}
+	Then, assuming nothing goes wrong, the output of step
+	\ref{step_cite} will be something like \citegit{\githash}, the hash of the
+	latest commit. The length of the hash can be changed by setting
+	the \verb+[hashes=]+ package option, and if the repository is hosted on
+	\href{https://github.com}{GitHub} then the hash will be a link to the
+	appropriate GitHub page.
+
+	\section*{Citing a file}
+	The \verb+\citegit+ command has an optional argument that allows a particular
+	file in the repository to be cited:
+	\begin{verbatim}
+		\citegit[yourfile]{fullhash}
+	\end{verbatim}
+	For example, this document first appeared as
+	\citegit[sample.tex]{64cfab6556112b5190a2deade78f0f628cf848a9}.
+	There is yet another optional argument that allows a specific line, or a
+	range of lines, of a particular file to be cited:
+	\begin{verbatim}
+		\citegit[start--end][yourfile]{fullhash}
+	\end{verbatim}
+	For example, at the time of writing the \verb+\citegit+ command
+	was implemented as
+	\citegit[94--149][citegit.sty]{315889ccbb1e0074da8cdf05abf8cb2cbb6d4fdd}.
+
+	\section*{Information about the latest commit}
+	The package has two modes of operation.
+	In its default mode the package only considers commits that relate to
+	\verb+yourdoc.tex+ and its dependencies.
+	The dependencies of the document are determined in the following way.
+	\begin{enumerate}
+		\item
+		If there is a makefile with target \verb+yourdoc.pdf+ then the dependencies
+		will be lifted verbatim from the makefile. The makefile target that the
+		package looks for can be changed by setting the \verb+[target=]+ package
+		option in step \ref{step_package} above.
+		\item
+		Otherwise, the package looks through \verb+yourdoc.tex+ for occurrences
+		of \verb+\input{*.tex}+ and \verb+\include{*.tex}+, and treats every
+		filename it finds as a dependency.
+		The document that the package searches can be changed by setting the
+		\verb+[source=]+ package option.
+	\end{enumerate}
+
+	In its alternative mode of operation the package considers all commits that
+	relate to the files in a given directory. This mode can be enabled by setting
+	the \verb+[dir=]+ package option. For example, setting \verb+[dir=.]+ will
+	cause the package to consider all commits relating to files in the same
+	directory as \verb+yourdoc.tex+.
+
+	Once the package has determined which commits to consider, it obtains the
+	following information about the most recent one.
+	\begin{description}
+		\item[\texttt{\char`\\githash}]
+		The full commit hash.
+		\item[\texttt{\char`\\gitdate}]
+		The commit date and time, currently ``\gitdate''. The display format depends
+		on the configuration of \verb+git log+.
+		\item[\texttt{\char`\\gitauthor}]
+		The commit author, currently ``\gitauthor''.
+		\item[\texttt{\char`\\gitmessage}]
+		The commit message, currently ``\gitmessage'' \TeX{} command names are
+		displayed in \texttt{teletype} font, but it is entirely possible that
+		other unusual commit messages will cause the package to fail spectacularly.
+	\end{description}
+
+	\section*{The state of the repository}
+	The \verb+\ifclean+ command tests whether or not the repository is clean
+	(no uncommitted changes), and can be used to display a message
+	describing the state of the repository:
+	\begin{verbatim}
+		\ifclean{Repository is clean}{Repository is not clean}
+	\end{verbatim}
+	For example, the repository is currently \textbf{\ifclean{clean}{not clean}}.
+
+	Note that (as above) \verb+\ifclean+ only considers \verb+yourdoc.tex+ and its
+	dependencies, or files in the directory specified by the \verb+[dir=]+
+	package option, when deciding whether or not the repository is clean.
+	In this second case it may be desirable to ignore untracked files, in which
+	case the \verb+\ifclean*+ command should be used instead.
+\end{document}
