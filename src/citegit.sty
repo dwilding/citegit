@@ -1,11 +1,8 @@
 % README
 %
-% Documents using this package must be compiled with the --shell-escape option
-% because external scripts are used. The output of these scripts is captured
-% using a method described here: http://tex.stackexchange.com/questions/16790
+% Documents using this package must be compiled using lualatex with the 
+% --shell-escape option because the package makes calls to git.
 
-% Scripts path
-\def\citegit@path{./}
 
 \ProvidesPackage{citegit}
 
@@ -14,6 +11,7 @@
 \RequirePackage{kvoptions}
 \RequirePackage{xstring}
 \RequirePackage{xparse}
+\RequirePackage{luacode}
 
 % Package options
 \DeclareStringOption[\jobname.tex]{source}
@@ -22,46 +20,49 @@
 \DeclareStringOption[10]{hashes}
 \ProcessKeyvalOptions*
 
+% Lua functions
+\luadirect{require('citegit')}
+
+\begin{luacode}
+	source = \luastring{\jobname} .. '.tex'
+	depends = {source}
+\end{luacode}
+
 \IfStrEq{\citegit@dir}{}{%
 	% If \citegit@dir has not been specified then the working directory is . and
 	% the latest commit should only involve the current job and its dependencies
 	\def\citegit@dir{.}%
 	% Input the dependencies of the current job
-	\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
-	\edef\x{\endgroup\def\noexpand\citegit@filter{\@@input|"\citegit@path dependencies.sh '\citegit@source' '\citegit@target'" }}\x%
+	\begin{luacode*}
+		if table.getn(depends) == 0 do
+			table.insert(depends, source)
+		done
+\end{luacode*}
 }{%
 	% If \citegit@dir has been specified then the latest commit should involve
 	% anything in the directory \citegit@dir
-	\def\citegit@filter{\citegit@dir}%
+	% \begin{luacode}
+	% 	depends = \citegit@dir
+	% \end{luacode}
 }
 
 % Input the latest commit hash
-\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
-\edef\x{\endgroup\def\noexpand\githash{\@@input|"\citegit@path log.sh 'H' '\citegit@filter'" }}\x
-
-% Input the latest commit date
-\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
-\edef\x{\endgroup\def\noexpand\gitdate{\@@input|"\citegit@path log.sh 'ad' '\citegit@filter'" }}\x
-
-% Input the latest commit author
-\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
-\edef\x{\endgroup\def\noexpand\gitauthor{\@@input|"\citegit@path log.sh 'an' '\citegit@filter'" }}\x
-
-% Input the latest commit message
-\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
-\edef\x{\endgroup\def\noexpand\gitmessage{\@@input|"\citegit@path log-pretty.sh 's' '\citegit@filter'" }}\x
+\def\githash{\luadirect{printGitinfo(\luastring{H}, depends)}}
+\def\gitdate{\luadirect{printGitinfo(\luastring{ad}, depends)}}
+\def\gitauthor{\luadirect{printGitinfo(\luastring{an}, depends)}}
+\def\gitmessage{\luadirect{printGitinfo(\luastring{s}, depends)}}
 
 % Input the repository status
-\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
-\edef\x{\endgroup\def\noexpand\citegit@status{\@@input|"\citegit@path status.sh '' '\citegit@filter'" }}\x
+\begin{luacode*}
+	-- The repository status.
+	clean = gitClean(true, depends)
+	cleanStar = gitClean(false, depends)
 
-% Input the repository status (tracked files only)
-\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
-\edef\x{\endgroup\def\noexpand\citegit@status@star{\@@input|"\citegit@path status.sh '=no' '\citegit@filter'" }}\x
-
-% Input the GitHub repository
-\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}
-\edef\x{\endgroup\def\noexpand\citegit@github{\@@input|"\citegit@path github.sh" }}\x
+	-- The GitHub repository.
+	githubRepo = github()
+\end{luacode*}
+% Temporary laziness.
+\def\citegit@github{\luadirect{printGithub()}}
 
 % Print a backslash character or macro name
 \newcommand\citegit@char@backslash[1]{%
@@ -90,9 +91,21 @@
 \DeclareDocumentCommand{\ifclean}{smm}{%
 	% If a star is present then any untracked files will be ignored
 	\IfBooleanTF{#1}{%
-		\IfStrEq{\citegit@status@star}{}{#2}{#3}%
+		\luadirect{
+			if cleanstar then
+				tex.sprint(\luastring{#2})
+			else
+				tex.sprint(\luastring{#3})
+			end
+		}%
 	}{%
-		\IfStrEq{\citegit@status}{}{#2}{#3}%
+		\luadirect{
+			if clean then
+				tex.sprint(\luastring{#2})
+			else
+				tex.sprint(\luastring{#3})
+			end
+		}%
 	}%
 }
 
@@ -126,8 +139,8 @@
 	}%
 	\IfStrEq{\citegit@file}{}{}{%
 		% Input the file path relative to the root of the repository
-		\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
-		\edef\x{\endgroup\def\noexpand\citegit@fileurl{\@@input|"\citegit@path path.sh '\citegit@dir' '\citegit@file'" }}\x%
+		\def\citegit@fileurl{\luadirect{printGitpath(\luastring{\citegit@dir}, 
+		\luastring{\citegit@file})}}
 	}%
 	% Build the citation
 	\def\citegit@citation{%
