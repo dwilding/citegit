@@ -98,22 +98,22 @@
 
 % Cite a file in the repository
 % Usage: \citegit[line--line][file]{hash}
-\DeclareDocumentCommand{\citegit}{O{}O{}mO{}}{%
+\DeclareDocumentCommand{\citegit}{sO{}O{}mO{}}{%
 	% Shorten the hash if necessary
 	\IfInteger{\citegit@hashes}{%
-		\StrLeft{#3}{\citegit@hashes}[\citegit@hash]%
+		\StrLeft{#4}{\citegit@hashes}[\citegit@hash]%
 	}{%
-		\def\citegit@hash{#3}%
+		\def\citegit@hash{#4}%
 	}%
-	\IfStrEq{#2}{}{%
+	\IfStrEq{#3}{}{%
 		% The first argument is the file because there is no second argument
-		\def\citegit@file{#1}%
+		\def\citegit@file{#2}%
 		\def\citegit@line{}%
 		\def\citegit@lineurl{}%
 	}{%
 		% The second argument is the file and the first argument is the line
-		\def\citegit@file{#2}%
-		\def\citegit@linearg{#1--}%
+		\def\citegit@file{#3}%
+		\def\citegit@linearg{#2--}%
 		\StrBefore{\citegit@linearg}{--}[\citegit@linefrom]%
 		\StrBetween[1,2]{\citegit@linearg}{--}{--}[\citegit@lineto]%
 		\IfInteger{\citegit@lineto}{%
@@ -129,19 +129,26 @@
 		\begingroup\makeatletter\endlinechar=\m@ne\everyeof{\noexpand}%
 		\edef\x{\endgroup\def\noexpand\citegit@fileurl{\@@input|"\citegit@path path.sh '\citegit@dir' '\citegit@file'" }}\x%
 	}%
+	% Turn off hyperlinks if a star is present
+	\let\citegit@github@once\citegit@github
+	\IfBooleanTF{#1}{%
+		\def\citegit@github@once{}%
+	}{}%
 	% Build the citation
-	\def\citegit@citation{%
-		\IfStrEq{\citegit@github}{}{%
+	\IfStrEq{\citegit@github@once}{}{%
+		\def\citegit@citation{%
 			\texttt{\citegit@hash}%
 			\IfStrEq{\citegit@file}{}{}{
 				(\texttt{\citegit@file}\citegit@line)%
 			}%
-		}{%
-			\href{https://github.com/\citegit@github/tree/#3}{\texttt{\citegit@hash}}%
+		}%
+	}{%
+		\def\citegit@citation{%
+			\href{https://github.com/\citegit@github/tree/#4}{\texttt{\citegit@hash}}%
 			\IfStrEq{\citegit@file}{}{}{
 				(\href{%
 					https://github.com/\citegit@github/blob/%
-					#3\citegit@fileurl\citegit@lineurl%
+					#4\citegit@fileurl\citegit@lineurl%
 				}{%
 					\texttt{\citegit@file}\citegit@line%
 				})%
@@ -149,9 +156,9 @@
 		}%
 	}%
 	% Print the citation or assign it to a macro
-	\IfStrEq{\detokenize{#4}}{}{%
+	\IfStrEq{\detokenize{#5}}{}{%
 		\citegit@citation%
 	}{%
-		\let#4\citegit@citation%
+		\let#5\citegit@citation%
 	}%
 }
