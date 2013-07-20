@@ -97,7 +97,7 @@
 }
 
 % Cite a file in the repository
-% Usage: \citegit[line--line][file]{hash}
+% Usage: \citegit[*][line--line][file]{hash}[\macro]
 \DeclareDocumentCommand{\citegit}{sO{}O{}mO{}}{%
 	% Shorten the hash if necessary
 	\IfInteger{\citegit@hashes}{%
@@ -136,21 +136,30 @@
 	}{}%
 	% Build the citation
 	\IfStrEq{\citegit@github@once}{}{%
-		\def\citegit@citation{%
-			\texttt{\citegit@hash}%
-			\IfStrEq{\citegit@file}{}{}{
-				(\texttt{\citegit@file}\citegit@line)%
+		\IfStrEq{\citegit@file}{}{%
+			\edef\citegit@citation{%
+				\noexpand\texttt{\citegit@hash}%
+			}%
+		}{%
+			\edef\citegit@citation{%
+				\noexpand\texttt{\citegit@hash}
+				(\noexpand\texttt{\citegit@file}\citegit@line)%
 			}%
 		}%
 	}{%
-		\def\citegit@citation{%
-			\href{https://github.com/\citegit@github/tree/#4}{\texttt{\citegit@hash}}%
-			\IfStrEq{\citegit@file}{}{}{
-				(\href{%
-					https://github.com/\citegit@github/blob/%
-					#4\citegit@fileurl\citegit@lineurl%
-				}{%
-					\texttt{\citegit@file}\citegit@line%
+		\IfStrEq{\citegit@file}{}{%
+			\edef\citegit@citation{%
+				\noexpand\href{https://github.com/\citegit@github/tree/#4}{%
+					\noexpand\texttt{\citegit@hash}%
+				}%
+			}%
+		}{%
+			\edef\citegit@citation{%
+				\noexpand\href{https://github.com/\citegit@github/tree/#4}{%
+					\noexpand\texttt{\citegit@hash}%
+				}
+				(\noexpand\href{https://github.com/\citegit@github/blob/#4\citegit@fileurl\citegit@lineurl}{%
+					\noexpand\texttt{\citegit@file}\citegit@line%
 				})%
 			}%
 		}%
